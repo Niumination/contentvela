@@ -24,23 +24,29 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
 
       - name: Install dependencies
-        # npm 10.9.x on the runner intermittently dies with
-        # "Exit handler never called!" — disabling the npm cache and the audit
-        # progress reporter avoids that path entirely.
-        run: npm ci --no-audit --no-fund --loglevel=error
+        # The npm 10.9.x shipped with Node 22 intermittently dies on the
+        # ubuntu runner ("Exit handler never called!" after ~70s, exit 1) even
+        # with a valid lockfile. npm 11 on Node 24 is used instead; the second
+        # command is a safety net if that one ever regresses the same way.
+        run: |
+          npm ci --no-audit --no-fund --loglevel=error || \
+          npm install --no-audit --no-fund --loglevel=error
 
       - name: Test
         run: npm test
 
       - name: Typecheck and build
-        # BASE_PATH must match the repo name, because Pages serves the app
-        # from https://<user>.github.io/contentvela/ — not the domain root.
+        # Node 24 runs the toolchain (Vite 8 / TS 6 / Vitest 5), but keep the
+        # engines field honest for local dev on Node 22.
         env:
           BASE_PATH: /${{ github.event.repository.name }}/
         run: npm run build
+
+      - name: Show toolchain versions
+        run: node --version && npm --version
 
       - uses: actions/configure-pages@v5
 
