@@ -25,10 +25,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        # npm 10.9.x on the runner intermittently dies with
+        # "Exit handler never called!" — disabling the npm cache and the audit
+        # progress reporter avoids that path entirely.
+        run: npm ci --no-audit --no-fund --loglevel=error
 
       - name: Test
         run: npm test
